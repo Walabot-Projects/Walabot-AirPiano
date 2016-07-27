@@ -6,13 +6,16 @@ from math import sqrt, sin, cos, radians
 try: import Tkinter as tk
 except: import tkinter as tk
 from os import system
+import pygame
 
-ASSETS_PATH = join(dirname(argv[0]), 'assets')
-ICON_PATH = join(ASSETS_PATH, 'icon.png')
-BLANK_KEYS_PATH = join(ASSETS_PATH, 'keys-blank.gif')
-HIGLGHT_PATH = lambda n: join(ASSETS_PATH, 'highlight-'+n+'.gif')
-PRESSED_PATH = lambda n: join(ASSETS_PATH, 'pressed-'+n+'.gif')
+IMG_PATH = join(dirname(argv[0]), 'img')
+ICON_PATH = join(IMG_PATH, 'icon.png')
+BLANK_KEYS_PATH = join(IMG_PATH, 'keys-blank.gif')
+HIGLGHT_PATH = lambda n: join(IMG_PATH, 'highlight-'+n+'.gif')
+PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+n+'.gif')
 CONNECT_WALABOT_PATH = join(dirname(argv[0]), 'connect-walabot.gif')
+SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound', 'piano-'+n+'.wav')
+NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
 R_MIN, R_MAX, R_RES = 2, 25, 5 # walabot SetArenaR values
 THETA_MIN, THETA_MAX, THETA_RES = -45, 45, 5 # walabot SetArenaTheta values
@@ -29,9 +32,13 @@ class MainGUI(tk.Label):
         self.wlbt = Walabot(self)
         self.after(500, self.startWlbt)
         self.keyNum = lambda y: int(7 * (y + Y_MAX) / (2 * Y_MAX)) + 1
+        self.pygame = pygame
+        self.pygame.init()
+        self.playedLastTime = False
     def startWlbt(self):
         self.alertIfWalabotIsNotConnected(self)
         self.wlbt.setParametersAndStart()
+        self.lastKeyPressed = 0
         self.detectTargetAndReply()
     def alertIfWalabotIsNotConnected(self, master):
         """
@@ -49,22 +56,30 @@ class MainGUI(tk.Label):
         system('clear')
         if not coordinates: # no targets were found
             self.resetPianoImage()
+            self.playedLastTime = False
             return
         xValue, yValue, zValue = coordinates[0], coordinates[1], coordinates[2]
-        if zValue < R_MAX: # hand is close enough to the Walabot
-            key = self.keyNum(yValue) # key number according to y target value
-            key = 7 if key == 8 else key # due to arena inconsistencies
+        key = self.keyNum(yValue) # key number according to y target value
+        key = 7 if key == 8 else key # due to arena inconsistencies
+        if zValue < R_MAX and key == self.lastKeyPressed:
             if abs(xValue) < X_MAX / 2: # hand is at 'press' area
-                self.pressAndPlayKey(self.keyNum(yValue))
+                self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
-                self.highlightKey(self.keyNum(yValue))
+                self.highlightKey(key)
+                self.playedLastTime = False
         else: # hand is too far from the Walabot
             self.resetPianoImage()
+            self.playedLastTime = False
+        self.lastKeyPressed = key
     def pressAndPlayKey(self, key):
         # TODO: play sound
         print('Press:', int(key))
         self.img = tk.PhotoImage(file=PRESSED_PATH(str(key)))
         self.configure(image=self.img)
+        if not self.playedLastTime:
+            self.pygame.mixer.music.load(SOUND_PATH(NOTES[key]))
+            self.pygame.mixer.music.play()
+            self.playedLastTime = True
     def highlightKey(self, key):
         print('Highlight:', int(key))
         self.img = tk.PhotoImage(file=HIGLGHT_PATH(str(key)))
