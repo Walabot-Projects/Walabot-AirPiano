@@ -46,37 +46,41 @@ class MainGUI(tk.Label):
     def detectTargetAndReply(self):
         self.after_idle(self.detectTargetAndReply)
         coordinates = self.wlbt.getClosestTargetCoordinates()
+        system('clear')
         if not coordinates: # no targets were found
             self.resetPianoImage()
             return
         xValue, yValue, zValue = coordinates[0], coordinates[1], coordinates[2]
-        if zValue < R_MAX:
-            if abs(xValue) < X_MAX / 2:
+        if zValue < R_MAX: # hand is close enough to the Walabot
+            key = self.keyNum(yValue) # key number according to y target value
+            key = 7 if key == 8 else key # due to arena inconsistencies
+            if abs(xValue) < X_MAX / 2: # hand is at 'press' area
                 self.pressAndPlayKey(self.keyNum(yValue))
-            else:
+            else: # hand is at 'highlight' area
                 self.highlightKey(self.keyNum(yValue))
-        else:
+        else: # hand is too far from the Walabot
             self.resetPianoImage()
-    def pressAndPlayKey(self, yValue):
-        # TODO: change image to pressed key, play sound
-        system('clear')
-        print('Press:', int(yValue))
-        self.img = tk.PhotoImage(file=PRESSED_PATH(str(yValue)))
+    def pressAndPlayKey(self, key):
+        # TODO: play sound
+        print('Press:', int(key))
+        self.img = tk.PhotoImage(file=PRESSED_PATH(str(key)))
         self.configure(image=self.img)
-    def highlightKey(self, yValue):
-        # TODO: change image to highlight
-        system('clear')
-        print('Highlight:', int(yValue))
-        self.img = tk.PhotoImage(file=HIGLGHT_PATH(str(yValue)))
+    def highlightKey(self, key):
+        print('Highlight:', int(key))
+        self.img = tk.PhotoImage(file=HIGLGHT_PATH(str(key)))
         self.configure(image=self.img)
     def resetPianoImage(self):
-        system('clear')
         print('Too far')
-        self.img = tk.PhotoImage(file=IMAGE_PATH)
+        self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         self.configure(image=self.img)
 
 class Walabot:
     def __init__(self, master):
+        """ Initialize the Walabot SDK, importing the Walabot module,
+            set the settings folder path and declare the 'distance' lambda
+            function which calculates the distance of a 3D point from the
+            origin of axes.
+        """
         self.master = master
         if platform == 'win32': # for windows
             path = join('C:/', 'Program Files', 'Walabot', 'WalabotSDK',
@@ -88,6 +92,10 @@ class Walabot:
         self.wlbt.SetSettingsFolder()
         self.distance = lambda t: sqrt(t.xPosCm**2 + t.yPosCm**2 + t.zPosCm**2)
     def isConnected(self):
+        """ Connect the Walabot, return True/False according to the result.
+            Returns:
+                isConnected     'True' if connected, 'False' if not
+        """
         try:
             self.wlbt.ConnectAny()
         except self.wlbt.WalabotError as err:
@@ -95,6 +103,9 @@ class Walabot:
                 return False
         return True
     def setParametersAndStart(self):
+        """ Set the Walabot's profile, arena parameters, and filter type. Then
+            start the walabot using Start() function.
+        """
         self.wlbt.SetProfile(self.wlbt.PROF_SENSOR)
         self.wlbt.SetArenaR(R_MIN, R_MAX, R_RES)
         self.wlbt.SetArenaTheta(THETA_MIN, THETA_MAX, THETA_RES)
@@ -103,6 +114,13 @@ class Walabot:
         self.wlbt.SetDynamicImageFilter(self.wlbt.FILTER_TYPE_MTI)
         self.wlbt.Start()
     def getClosestTargetCoordinates(self):
+        """ Trigger the Walabot and retrieve the recieved targets using
+            GetSensorTargets(). Then calculate the closest target (to the
+            walabot) and return it's coordinates.
+            Returns:
+                x, y, z     Coordinates of closest target, 'None' (at each
+                            coordinate if no targets were found)
+        """
         self.wlbt.Trigger()
         targets = self.wlbt.GetSensorTargets()
         if targets:
