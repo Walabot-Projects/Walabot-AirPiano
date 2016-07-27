@@ -7,8 +7,11 @@ try: import Tkinter as tk
 except: import tkinter as tk
 from os import system
 
-ICON_PATH = join(dirname(argv[0]), 'walabot-icon.png')
-IMAGE_PATH = join(dirname(argv[0]), 'piano-keys-0.gif')
+ASSETS_PATH = join(dirname(argv[0]), 'assets')
+ICON_PATH = join(ASSETS_PATH, 'icon.png')
+BLANK_KEYS_PATH = join(ASSETS_PATH, 'keys-blank.gif')
+HIGLGHT_PATH = lambda n: join(ASSETS_PATH, 'highlight-'+n+'.gif')
+PRESSED_PATH = lambda n: join(ASSETS_PATH, 'pressed-'+n+'.gif')
 CONNECT_WALABOT_PATH = join(dirname(argv[0]), 'connect-walabot.gif')
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
 R_MIN, R_MAX, R_RES = 2, 25, 5 # walabot SetArenaR values
@@ -21,7 +24,7 @@ Z_MAX = R_MAX * cos(radians(THETA_MAX)) * cos(radians(PHI_MAX))
 
 class MainGUI(tk.Label):
     def __init__(self, master):
-        self.img = tk.PhotoImage(file=IMAGE_PATH)
+        self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         tk.Label.__init__(self, master, image=self.img)
         self.wlbt = Walabot(self)
         self.after(500, self.startWlbt)
@@ -58,13 +61,19 @@ class MainGUI(tk.Label):
         # TODO: change image to pressed key, play sound
         system('clear')
         print('Press:', int(yValue))
+        self.img = tk.PhotoImage(file=PRESSED_PATH(str(yValue)))
+        self.configure(image=self.img)
     def highlightKey(self, yValue):
         # TODO: change image to highlight
         system('clear')
         print('Highlight:', int(yValue))
+        self.img = tk.PhotoImage(file=HIGLGHT_PATH(str(yValue)))
+        self.configure(image=self.img)
     def resetPianoImage(self):
         system('clear')
         print('Too far')
+        self.img = tk.PhotoImage(file=IMAGE_PATH)
+        self.configure(image=self.img)
 
 class Walabot:
     def __init__(self, master):
@@ -104,9 +113,7 @@ def configureWindow(root):
     """ Set configurations for the GUI window, such as icon, title, etc.
     """
     root.title('Walabot - Piano Gestures')
-    iconPath = join(dirname(argv[0]), 'walabot-icon.png')
-    iconFile = tk.PhotoImage(file=iconPath)
-    root.tk.call('wm', 'iconphoto', root._w, iconFile) # set app icon
+    root.tk.call('wm', 'iconphoto', root._w, tk.PhotoImage(file=ICON_PATH))
     root.geometry('+{}+{}'.format(APP_X, APP_Y))
     root.resizable(width=False, height=False)
 
