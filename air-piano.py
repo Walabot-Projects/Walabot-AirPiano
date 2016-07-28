@@ -17,9 +17,9 @@ PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+str(n)+'.gif')
 SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound', 'piano-'+n+'.wav')
 NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
-R_MIN, R_MAX, R_RES = 2, 25, 5 # walabot SetArenaR values
-THETA_MIN, THETA_MAX, THETA_RES = -45, 45, 5 # walabot SetArenaTheta values
-PHI_MIN, PHI_MAX, PHI_RES = -60, 60, 5 # walabot SetArenaPhi values
+R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
+THETA_MIN, THETA_MAX, THETA_RES = -25, 25, 2 # walabot SetArenaTheta values
+PHI_MIN, PHI_MAX, PHI_RES = -60, 60, 2 # walabot SetArenaPhi values
 TSHLD = 15 # walabot SetThreshold value
 X_MAX = R_MAX * sin(radians(THETA_MAX))
 Y_MAX = R_MAX * cos(radians(THETA_MAX)) * sin(radians(PHI_MAX))
@@ -80,7 +80,7 @@ class MainGUI(tk.Label):
         key = self.keyNum(median(self.lastYValues))
         key = 7 if key == 8 else key # due to arena inconsistencies
         if zValue < R_MAX and key == self.lastKeyPressed:
-            if abs(xValue) < X_MAX / 2: # hand is at 'press' area
+            if xValue >= 0: # hand is at 'press' area
                 self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
                 self.configure(image=self.keyHiglghtImages[key-1])
