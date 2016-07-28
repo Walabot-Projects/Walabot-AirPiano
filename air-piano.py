@@ -26,7 +26,7 @@ X_MAX = R_MAX * sin(radians(THETA_MAX))
 Y_MAX = R_MAX * cos(radians(THETA_MAX)) * sin(radians(PHI_MAX))
 Z_MAX = R_MAX * cos(radians(THETA_MAX)) * cos(radians(PHI_MAX))
 
-def median(nums):
+def getMedian(nums):
     """ Given an iterable containing numbers, return the median.
         Arguments:
             nums            An iterable containing numbers.
@@ -51,7 +51,6 @@ class MainGUI(tk.Label):
         self.pygame.init()
         self.playedLastTime = False
         self.lastKeyPressed = 0
-        self.lastYValues = [0] * 10
         self.keyHiglghtImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1))
             for k in range(7)]
         self.keyPressedImages = [tk.PhotoImage(file=PRESSED_PATH(k+1))
@@ -75,19 +74,18 @@ class MainGUI(tk.Label):
 
     def detectTargetAndReply(self):
         self.after_idle(self.detectTargetAndReply)
-        t = self.wlbt.getClosestTarget()
+        target = self.wlbt.getClosestTarget()
         self.lastTargets.popleft()
-        self.lastTargets.append(t)
-        if not t:
+        self.lastTargets.append(target)
+        if not target:
             self.configure(image=self.img)
             self.playedLastTime = False
-            self.lastYValues = self.lastYValues[1:] + [0]
             return
-        self.lastYValues = self.lastYValues[1:] + [t.yPosCm]
-        key = self.keyNum(median(self.lastYValues))
+        median = getMedian(t.yPosCm for t in self.lastTargets if t is not None)
+        key = self.keyNum(median)
         key = 7 if key == 8 else key # due to arena inconsistencies
-        if t.zPosCm < R_MAX and key == self.lastKeyPressed:
-            if t.xPosCm >= 0: # hand is at 'press' area
+        if target.zPosCm < R_MAX and key == self.lastKeyPressed:
+            if target.xPosCm >= 0: # hand is at 'press' area
                 self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
                 self.configure(image=self.keyHiglghtImages[key-1])
