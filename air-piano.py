@@ -6,6 +6,7 @@ from math import sqrt, sin, cos, radians
 try: import Tkinter as tk
 except: import tkinter as tk
 from os import system
+from collections import deque
 import pygame
 
 IMG_PATH = join(dirname(argv[0]), 'img')
@@ -39,6 +40,7 @@ def median(nums):
         return float(sum(nums[(len(nums)/2)-1:(len(nums)/2)+1])) / 2.0
 
 class MainGUI(tk.Label):
+
     def __init__(self, master):
         self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         tk.Label.__init__(self, master, image=self.img)
@@ -54,10 +56,13 @@ class MainGUI(tk.Label):
             for k in range(7)]
         self.keyPressedImages = [tk.PhotoImage(file=PRESSED_PATH(k+1))
             for k in range(7)]
+        self.lastTargets = deque([None] * 5)
+
     def startWlbt(self):
         if self.alertIfWalabotIsNotConnected():
             self.wlbt.setParametersAndStart()
             self.detectTargetAndReply()
+
     def alertIfWalabotIsNotConnected(self):
         if not self.wlbt.isConnected():
             self.img = tk.PhotoImage(file=CONNECT_WALABOT_PATH)
@@ -67,20 +72,22 @@ class MainGUI(tk.Label):
         self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         self.configure(image=self.img)
         return True
+
     def detectTargetAndReply(self):
         self.after_idle(self.detectTargetAndReply)
-        coordinates = self.wlbt.getClosestTargetCoordinates()
-        if not coordinates: # no targets were found
+        t = self.wlbt.getClosestTarget()
+        self.lastTargets.popleft()
+        self.lastTargets.append(t)
+        if not t:
             self.configure(image=self.img)
             self.playedLastTime = False
             self.lastYValues = self.lastYValues[1:] + [0]
             return
-        xValue, yValue, zValue = coordinates[0], coordinates[1], coordinates[2]
-        self.lastYValues = self.lastYValues[1:] + [yValue]
+        self.lastYValues = self.lastYValues[1:] + [t.yPosCm]
         key = self.keyNum(median(self.lastYValues))
         key = 7 if key == 8 else key # due to arena inconsistencies
-        if zValue < R_MAX and key == self.lastKeyPressed:
-            if xValue >= 0: # hand is at 'press' area
+        if t.zPosCm < R_MAX and key == self.lastKeyPressed:
+            if t.xPosCm >= 0: # hand is at 'press' area
                 self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
                 self.configure(image=self.keyHiglghtImages[key-1])
@@ -89,6 +96,7 @@ class MainGUI(tk.Label):
             self.configure(image=self.img)
             self.playedLastTime = False
         self.lastKeyPressed = key
+
     def pressAndPlayKey(self, key):
         """ Given a key, change the piano image to one where the certain key
             is pressed. Play a piano sound corresponding to the key if in the
@@ -103,6 +111,7 @@ class MainGUI(tk.Label):
 class Walabot:
     """ This class is designed to control Walabot device using the Walabot SDK.
     """
+
     def __init__(self, master):
         """ Initialize the Walabot SDK, importing the Walabot module,
             set the settings folder path and declare the 'distance' lambda
@@ -119,6 +128,7 @@ class Walabot:
         self.wlbt.Init()
         self.wlbt.SetSettingsFolder()
         self.distance = lambda t: sqrt(t.xPosCm**2 + t.yPosCm**2 + t.zPosCm**2)
+
     def isConnected(self):
         """ Connect the Walabot, return True/False according to the result.
             Returns:
@@ -130,6 +140,7 @@ class Walabot:
             if err.code == 19: # 'WALABOT_INSTRUMENT_NOT_FOUND'
                 return False
         return True
+
     def setParametersAndStart(self):
         """ Set the Walabot's profile, arena parameters, and filter type. Then
             start the walabot using Start() function.
@@ -141,19 +152,21 @@ class Walabot:
         self.wlbt.SetThreshold(TSHLD)
         self.wlbt.SetDynamicImageFilter(self.wlbt.FILTER_TYPE_MTI)
         self.wlbt.Start()
-    def getClosestTargetCoordinates(self):
+
+    def getClosestTarget(self):
         """ Trigger the Walabot and retrieve the recieved targets using
             GetSensorTargets(). Then calculate the closest target (to the
-            walabot) and return it's coordinates.
+            walabot) and returns it.
             Returns:
-                x, y, z     Coordinates of closest target, 'None' (at each
-                            coordinate if no targets were found)
+                target      Of SensorTarget type. The closest one. May be
+                            'None' if no targets where found.
         """
         self.wlbt.Trigger()
         targets = self.wlbt.GetSensorTargets()
-        if targets:
-            target = max(targets, key=self.distance)
-            return target.xPosCm, target.yPosCm, target.zPosCm
+        try:
+            return max(targets, key=self.distance)
+        except ValueError: # 'targets' is empty; no targets were found
+            return None
 
 def configureWindow(root):
     """ Set configurations for the GUI window, such as icon, title, etc.
