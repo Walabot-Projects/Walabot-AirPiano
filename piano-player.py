@@ -70,24 +70,22 @@ class MainGUI(tk.Label):
     def detectTargetAndReply(self):
         self.after_idle(self.detectTargetAndReply)
         coordinates = self.wlbt.getClosestTargetCoordinates()
-        system('clear')
         if not coordinates: # no targets were found
-            print('Too far')
             self.configure(image=self.img)
             self.playedLastTime = False
+            self.lastYValues = self.lastYValues[1:] + [0]
             return
         xValue, yValue, zValue = coordinates[0], coordinates[1], coordinates[2]
-        key = self.keyNum(yValue) # key number according to y target value
+        self.lastYValues = self.lastYValues[1:] + [yValue]
+        key = self.keyNum(median(self.lastYValues))
         key = 7 if key == 8 else key # due to arena inconsistencies
         if zValue < R_MAX and key == self.lastKeyPressed:
             if abs(xValue) < X_MAX / 2: # hand is at 'press' area
                 self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
-                print('Highlight:', key)
                 self.configure(image=self.keyHiglghtImages[key-1])
                 self.playedLastTime = False
         else: # hand is too far from the Walabot
-            print('Too far')
             self.configure(image=self.img)
             self.playedLastTime = False
         self.lastKeyPressed = key
@@ -96,7 +94,6 @@ class MainGUI(tk.Label):
             is pressed. Play a piano sound corresponding to the key if in the
             last iteration no sound was played.
         """
-        print('Press:', int(key))
         self.configure(image=self.keyPressedImages[key-1])
         if not self.playedLastTime:
             self.pygame.mixer.music.load(SOUND_PATH(NOTES[key]))
