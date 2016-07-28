@@ -13,7 +13,7 @@ ICON_PATH = join(IMG_PATH, 'icon.png')
 BLANK_KEYS_PATH = join(IMG_PATH, 'keys-blank.gif')
 HIGLGHT_PATH = lambda n: join(IMG_PATH, 'highlight-'+n+'.gif')
 PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+n+'.gif')
-CONNECT_WALABOT_PATH = join(dirname(argv[0]), 'connect-walabot.gif')
+CONNECT_WALABOT_PATH = join(IMG_PATH, 'connect-device.gif')
 SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound', 'piano-'+n+'.wav')
 NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
@@ -29,27 +29,26 @@ class MainGUI(tk.Label):
     def __init__(self, master):
         self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         tk.Label.__init__(self, master, image=self.img)
-        self.wlbt = Walabot(self)
-        self.after(500, self.startWlbt)
+        self.wlbt = Walabot(self) # init the Walabot SDK
+        self.after(500, self.startWlbt) # necessary delay to open the window
         self.keyNum = lambda y: int(7 * (y + Y_MAX) / (2 * Y_MAX)) + 1
-        self.pygame = pygame
+        self.pygame = pygame # used to play piano sound
         self.pygame.init()
         self.playedLastTime = False
-    def startWlbt(self):
-        self.alertIfWalabotIsNotConnected(self)
-        self.wlbt.setParametersAndStart()
         self.lastKeyPressed = 0
-        self.detectTargetAndReply()
-    def alertIfWalabotIsNotConnected(self, master):
-        """
-        connectWalabotImage = tk.PhotoImage(file=CONNECT_WALABOT_PATH)
-        connectWalabotLabel = tk.Label(master, image=connectWalabotImage)
+    def startWlbt(self):
+        if self.alertIfWalabotIsNotConnected():
+            self.wlbt.setParametersAndStart()
+            self.detectTargetAndReply()
+    def alertIfWalabotIsNotConnected(self):
         if not self.wlbt.isConnected():
-            connectWalabotLabel.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-            self.update_idletasks()
-        """
-        while not self.wlbt.isConnected():
-            print('not connected')
+            self.img = tk.PhotoImage(file=CONNECT_WALABOT_PATH)
+            self.configure(image=self.img)
+            self.after_idle(self.startWlbt)
+            return False
+        self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
+        self.configure(image=self.img)
+        return True
     def detectTargetAndReply(self):
         self.after_idle(self.detectTargetAndReply)
         coordinates = self.wlbt.getClosestTargetCoordinates()
@@ -72,7 +71,10 @@ class MainGUI(tk.Label):
             self.playedLastTime = False
         self.lastKeyPressed = key
     def pressAndPlayKey(self, key):
-        # TODO: play sound
+        """ Given a key, change the piano image to one where the certain key
+            is pressed. Play a piano sound corresponding to the key if in the
+            last iteration no sound was played.
+        """
         print('Press:', int(key))
         self.img = tk.PhotoImage(file=PRESSED_PATH(str(key)))
         self.configure(image=self.img)
@@ -81,15 +83,22 @@ class MainGUI(tk.Label):
             self.pygame.mixer.music.play()
             self.playedLastTime = True
     def highlightKey(self, key):
+        """ Given a key, change the piano image to one where the certain key
+            is highlighted.
+        """
         print('Highlight:', int(key))
         self.img = tk.PhotoImage(file=HIGLGHT_PATH(str(key)))
         self.configure(image=self.img)
     def resetPianoImage(self):
+        """ Resets the piano image to a blank one (no highlight/pressed keys).
+        """
         print('Too far')
         self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         self.configure(image=self.img)
 
 class Walabot:
+    """ This class is designed to control Walabot device using the Walabot SDK.
+    """
     def __init__(self, master):
         """ Initialize the Walabot SDK, importing the Walabot module,
             set the settings folder path and declare the 'distance' lambda
@@ -151,8 +160,8 @@ def configureWindow(root):
     root.resizable(width=False, height=False)
 
 def startApp():
-    """ Main function.
-    """ # TODO: add func documentation.
+    """ Main function. Create and init the MainGUI class, which runs the app.
+    """
     root = tk.Tk()
     configureWindow(root)
     MainGUI(root).pack()
