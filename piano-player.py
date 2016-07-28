@@ -11,9 +11,9 @@ import pygame
 IMG_PATH = join(dirname(argv[0]), 'img')
 ICON_PATH = join(IMG_PATH, 'icon.png')
 BLANK_KEYS_PATH = join(IMG_PATH, 'keys-blank.gif')
+CONNECT_WALABOT_PATH = join(IMG_PATH, 'connect-device.gif')
 HIGLGHT_PATH = lambda n: join(IMG_PATH, 'highlight-'+str(n)+'.gif')
 PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+str(n)+'.gif')
-CONNECT_WALABOT_PATH = join(IMG_PATH, 'connect-device.gif')
 SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound', 'piano-'+n+'.wav')
 NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
@@ -24,6 +24,19 @@ TSHLD = 15 # walabot SetThreshold value
 X_MAX = R_MAX * sin(radians(THETA_MAX))
 Y_MAX = R_MAX * cos(radians(THETA_MAX)) * sin(radians(PHI_MAX))
 Z_MAX = R_MAX * cos(radians(THETA_MAX)) * cos(radians(PHI_MAX))
+
+def median(nums):
+    """ Given an iterable containing numbers, return the median.
+        Arguments:
+            nums            An iterable containing numbers.
+        Returns:
+            median          The median of the given values.
+    """
+    nums = sorted(nums)
+    if len(nums) % 2 == 1:
+        return nums[((len(nums)+1) / 2) - 1]
+    else:
+        return float(sum(nums[(len(nums)/2)-1:(len(nums)/2)+1])) / 2.0
 
 class MainGUI(tk.Label):
     def __init__(self, master):
@@ -36,6 +49,7 @@ class MainGUI(tk.Label):
         self.pygame.init()
         self.playedLastTime = False
         self.lastKeyPressed = 0
+        self.lastYValues = [0] * 10
         self.keyHiglghtImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1))
             for k in range(7)]
         self.keyPressedImages = [tk.PhotoImage(file=PRESSED_PATH(k+1))
@@ -58,7 +72,8 @@ class MainGUI(tk.Label):
         coordinates = self.wlbt.getClosestTargetCoordinates()
         system('clear')
         if not coordinates: # no targets were found
-            self.resetPianoImage()
+            print('Too far')
+            self.configure(image=self.img)
             self.playedLastTime = False
             return
         xValue, yValue, zValue = coordinates[0], coordinates[1], coordinates[2]
@@ -68,10 +83,12 @@ class MainGUI(tk.Label):
             if abs(xValue) < X_MAX / 2: # hand is at 'press' area
                 self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
-                self.highlightKey(key)
+                print('Highlight:', key)
+                self.configure(image=self.keyHiglghtImages[key-1])
                 self.playedLastTime = False
         else: # hand is too far from the Walabot
-            self.resetPianoImage()
+            print('Too far')
+            self.configure(image=self.img)
             self.playedLastTime = False
         self.lastKeyPressed = key
     def pressAndPlayKey(self, key):
@@ -85,17 +102,6 @@ class MainGUI(tk.Label):
             self.pygame.mixer.music.load(SOUND_PATH(NOTES[key]))
             self.pygame.mixer.music.play()
             self.playedLastTime = True
-    def highlightKey(self, key):
-        """ Given a key, change the piano image to one where the certain key
-            is highlighted.
-        """
-        print('Highlight:', int(key))
-        self.configure(image=self.keyHiglghtImages[key-1])
-    def resetPianoImage(self):
-        """ Resets the piano image to a blank one (no highlight/pressed keys).
-        """
-        print('Too far')
-        self.configure(image=self.img)
 
 class Walabot:
     """ This class is designed to control Walabot device using the Walabot SDK.
