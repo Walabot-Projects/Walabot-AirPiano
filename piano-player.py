@@ -18,12 +18,25 @@ SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound', 'piano-'+n+'.wav')
 NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
 R_MIN, R_MAX, R_RES = 2, 25, 5 # walabot SetArenaR values
-THETA_MIN, THETA_MAX, THETA_RES = -45, 45, 5 # walabot SetArenaTheta values
-PHI_MIN, PHI_MAX, PHI_RES = -60, 60, 5 # walabot SetArenaPhi values
+THETA_MIN, THETA_MAX, THETA_RES = -20, 20, 2 # walabot SetArenaTheta values
+PHI_MIN, PHI_MAX, PHI_RES = -60, 60, 2 # walabot SetArenaPhi values
 TSHLD = 15 # walabot SetThreshold value
 X_MAX = R_MAX * sin(radians(THETA_MAX))
 Y_MAX = R_MAX * cos(radians(THETA_MAX)) * sin(radians(PHI_MAX))
 Z_MAX = R_MAX * cos(radians(THETA_MAX)) * cos(radians(PHI_MAX))
+
+def median(nums):
+    """ Calculate the median of a given set of value.
+        Arguments:
+            nums            An iterable contains numbers.
+        Returns:
+            median          The median of these numbers.
+    """
+    nums = sorted(nums)
+    if len(nums) % 2 == 1:
+        return nums[((len(nums)+1) / 2) - 1]
+    else:
+        return float(sum(nums[(len(nums)/2)-1:(len(nums)/2)+1])) / 2.0
 
 class MainGUI(tk.Label):
     def __init__(self, master):
@@ -36,6 +49,7 @@ class MainGUI(tk.Label):
         self.pygame.init()
         self.playedLastTime = False
         self.lastKeyPressed = 0
+        self.lastYValues = [0] * 10
     def startWlbt(self):
         if self.alertIfWalabotIsNotConnected():
             self.wlbt.setParametersAndStart()
@@ -56,9 +70,11 @@ class MainGUI(tk.Label):
         if not coordinates: # no targets were found
             self.resetPianoImage()
             self.playedLastTime = False
+            self.lastYValues = self.lastYValues[1:] + [0]
             return
         xValue, yValue, zValue = coordinates[0], coordinates[1], coordinates[2]
-        key = self.keyNum(yValue) # key number according to y target value
+        self.lastYValues = self.lastYValues[1:] + [yValue]
+        key = self.keyNum(median(self.lastYValues))
         key = 7 if key == 8 else key # due to arena inconsistencies
         if zValue < R_MAX and key == self.lastKeyPressed:
             if abs(xValue) < X_MAX / 2: # hand is at 'press' area
