@@ -11,8 +11,8 @@ import pygame
 IMG_PATH = join(dirname(argv[0]), 'img')
 ICON_PATH = join(IMG_PATH, 'icon.png')
 BLANK_KEYS_PATH = join(IMG_PATH, 'keys-blank.gif')
-HIGLGHT_PATH = lambda n: join(IMG_PATH, 'highlight-'+n+'.gif')
-PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+n+'.gif')
+HIGLGHT_PATH = lambda n: join(IMG_PATH, 'highlight-'+str(n)+'.gif')
+PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+str(n)+'.gif')
 CONNECT_WALABOT_PATH = join(IMG_PATH, 'connect-device.gif')
 SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound', 'piano-'+n+'.wav')
 NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
@@ -36,6 +36,10 @@ class MainGUI(tk.Label):
         self.pygame.init()
         self.playedLastTime = False
         self.lastKeyPressed = 0
+        self.keyHiglghtImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1))
+            for k in range(7)]
+        self.keyPressedImages = [tk.PhotoImage(file=PRESSED_PATH(k+1))
+            for k in range(7)]
     def startWlbt(self):
         if self.alertIfWalabotIsNotConnected():
             self.wlbt.setParametersAndStart()
@@ -76,8 +80,7 @@ class MainGUI(tk.Label):
             last iteration no sound was played.
         """
         print('Press:', int(key))
-        self.img = tk.PhotoImage(file=PRESSED_PATH(str(key)))
-        self.configure(image=self.img)
+        self.configure(image=self.keyPressedImages[key-1])
         if not self.playedLastTime:
             self.pygame.mixer.music.load(SOUND_PATH(NOTES[key]))
             self.pygame.mixer.music.play()
@@ -87,13 +90,11 @@ class MainGUI(tk.Label):
             is highlighted.
         """
         print('Highlight:', int(key))
-        self.img = tk.PhotoImage(file=HIGLGHT_PATH(str(key)))
-        self.configure(image=self.img)
+        self.configure(image=self.keyHiglghtImages[key-1])
     def resetPianoImage(self):
         """ Resets the piano image to a blank one (no highlight/pressed keys).
         """
         print('Too far')
-        self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         self.configure(image=self.img)
 
 class Walabot:
