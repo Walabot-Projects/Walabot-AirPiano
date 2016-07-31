@@ -10,26 +10,29 @@ from collections import deque
 import pygame
 
 IMG_PATH = join(dirname(argv[0]), 'img')
-ICON_PATH = join(IMG_PATH, 'icon.png')
+ICON_PATH = join(IMG_PATH, 'icon.gif')
 BLANK_KEYS_PATH = join(IMG_PATH, 'keys-blank.gif')
 CONNECT_WALABOT_PATH = join(IMG_PATH, 'connect-device.gif')
 HIGLGHT_PATH = lambda n: join(IMG_PATH, 'highlight-'+str(n)+'.gif')
 PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+str(n)+'.gif')
 SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound', 'piano-'+n+'.wav')
-NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
+#NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
+NOTES = {1: 'g', 2: 'f', 3: 'e', 4: 'd', 5: 'c', 6: 'b', 7: 'a'}
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
+
 R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
-THETA_MIN, THETA_MAX, THETA_RES = -25, 25, 2 # walabot SetArenaTheta values
+THETA_MIN, THETA_MAX, THETA_RES = -25, 5, 2 # walabot SetArenaTheta values
 PHI_MIN, PHI_MAX, PHI_RES = -60, 60, 2 # walabot SetArenaPhi values
 TSHLD = 15 # walabot SetThreshold value
-X_MAX = R_MAX * sin(radians(THETA_MAX))
-Y_MAX = R_MAX * cos(radians(THETA_MAX)) * sin(radians(PHI_MAX))
-Z_MAX = R_MAX * cos(radians(THETA_MAX)) * cos(radians(PHI_MAX))
+X_MAX = R_MAX * sin(radians(abs(THETA_MIN)))
+Y_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * sin(radians(PHI_MAX))
+Z_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * cos(radians(PHI_MAX))
+VELOCITY_THRESHOLD = 0.6
 
 def getMedian(nums):
-    """ Given an iterable containing numbers, return the median.
+    """ Calculate median of a given set of values.
         Arguments:
-            nums            An iterable containing numbers.
+            nums            An iterable of numbers.
         Returns:
             median          The median of the given values.
     """
@@ -39,13 +42,28 @@ def getMedian(nums):
     else:
         return float(sum(nums[(len(nums)/2)-1:(len(nums)/2)+1])) / 2.0
 
+def getVelocity(data):
+    """ Calculate velocity of a given set of values using linear regression.
+        Arguments:
+            data            An iterable of numbers.
+        Returns:
+            velocity        The estimates slope.
+    """
+    sumY = sumXY = 0
+    for x, y in enumerate(data):
+        sumY, sumXY = sumY + y, sumXY + x*y
+    if sumXY == 0: return 0 # no values / one values only / all values are 0
+    sumX = x * (x+1) / 2 # Gauss's formula - sum of first x natural numbers
+    sumXX = x * (x+1) * (2*x+1) / 6 # sum of sequence of squares
+    return (sumXY - sumX*sumY/(x+1)) / (sumXX - sumX**2/(x+1))
+
 class MainGUI(tk.Label):
 
     def __init__(self, master):
         self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         tk.Label.__init__(self, master, image=self.img)
         self.wlbt = Walabot(self) # init the Walabot SDK
-        self.after(500, self.startWlbt) # necessary delay to open the window
+        self.after(750, self.startWlbt) # necessary delay to open the window
         self.keyNum = lambda y: int(7 * (y + Y_MAX) / (2 * Y_MAX)) + 1
         self.pygame = pygame # used to play piano sound
         self.pygame.init()
@@ -77,15 +95,17 @@ class MainGUI(tk.Label):
         target = self.wlbt.getClosestTarget()
         self.lastTargets.popleft()
         self.lastTargets.append(target)
+        #print(getVelocity(t.xPosCm for t in self.lastTargets if t is not None))
         if not target:
             self.configure(image=self.img)
             self.playedLastTime = False
             return
         median = getMedian(t.yPosCm for t in self.lastTargets if t is not None)
+        vel = getVelocity(t.xPosCm for t in self.lastTargets if t is not None)
         key = self.keyNum(median)
         key = 7 if key == 8 else key # due to arena inconsistencies
         if target.zPosCm < R_MAX and key == self.lastKeyPressed:
-            if target.xPosCm >= 0: # hand is at 'press' area
+            if vel > VELOCITY_THRESHOLD: # 'press' area
                 self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
                 self.configure(image=self.keyHiglghtImages[key-1])
