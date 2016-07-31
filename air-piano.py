@@ -3,11 +3,10 @@ from imp import load_source
 from os.path import join, dirname
 from sys import platform, argv
 from math import sqrt, sin, cos, radians
-try: import Tkinter as tk
-except: import tkinter as tk
-from os import system
 from collections import deque
 import pygame
+try: import Tkinter as tk
+except ImportError: import tkinter as tk
 
 IMG_PATH = join(dirname(argv[0]), 'img')
 ICON_PATH = join(IMG_PATH, 'icon.gif')
@@ -27,7 +26,7 @@ TSHLD = 15 # walabot SetThreshold value
 X_MAX = R_MAX * sin(radians(abs(THETA_MIN)))
 Y_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * sin(radians(PHI_MAX))
 Z_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * cos(radians(PHI_MAX))
-VELOCITY_THRESHOLD = 0.6
+VELOCITY_THRESHOLD = 0.6 # captured vel bigger than than counts as key-press
 
 def getMedian(nums):
     """ Calculate median of a given set of values.
@@ -57,6 +56,19 @@ def getVelocity(data):
     sumXX = x * (x+1) * (2*x+1) / 6 # sum of sequence of squares
     return (sumXY - sumX*sumY/(x+1)) / (sumXX - sumX**2/(x+1))
 
+def getKeyNum(y):
+    """ Calculate key number (out of 7) given a y position.
+        The keynumber is determined only by the Y axis of the walabot. The
+        given Y is between -Y_MAX and Y_MAX. Thus the key can be calculated
+        with a simple formula.
+        Argumets:
+            y               A value between -Y_MAX and Y_MAX.
+        Returns:
+            key             The key number (between 1 and 7).
+    """
+    key = int(7 * (y + Y_MAX) / (2 * Y_MAX)) + 1
+    return 7 if key == 8 else key # due to arena inconsistencies
+
 class MainGUI(tk.Label):
 
     def __init__(self, master):
@@ -64,7 +76,6 @@ class MainGUI(tk.Label):
         tk.Label.__init__(self, master, image=self.img)
         self.wlbt = Walabot(self) # init the Walabot SDK
         self.after(750, self.startWlbt) # necessary delay to open the window
-        self.keyNum = lambda y: int(7 * (y + Y_MAX) / (2 * Y_MAX)) + 1
         self.pygame = pygame # used to play piano sound
         self.pygame.init()
         self.playedLastTime = False
@@ -95,15 +106,13 @@ class MainGUI(tk.Label):
         target = self.wlbt.getClosestTarget()
         self.lastTargets.popleft()
         self.lastTargets.append(target)
-        #print(getVelocity(t.xPosCm for t in self.lastTargets if t is not None))
         if not target:
             self.configure(image=self.img)
             self.playedLastTime = False
             return
         median = getMedian(t.yPosCm for t in self.lastTargets if t is not None)
         vel = getVelocity(t.xPosCm for t in self.lastTargets if t is not None)
-        key = self.keyNum(median)
-        key = 7 if key == 8 else key # due to arena inconsistencies
+        key = getKeyNum(median)
         if target.zPosCm < R_MAX and key == self.lastKeyPressed:
             if vel > VELOCITY_THRESHOLD: # 'press' area
                 self.pressAndPlayKey(key)
