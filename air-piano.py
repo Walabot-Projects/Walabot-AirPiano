@@ -14,9 +14,8 @@ BLANK_KEYS_PATH = join(IMG_PATH, 'keys-blank.gif')
 CONNECT_WALABOT_PATH = join(IMG_PATH, 'connect-device.gif')
 HIGLGHT_PATH = lambda n: join(IMG_PATH, 'highlight-'+str(n)+'.gif')
 PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+str(n)+'.gif')
-SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound', 'piano-'+n+'.wav')
-#NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
-NOTES = {1: 'g', 2: 'f', 3: 'e', 4: 'd', 5: 'c', 6: 'b', 7: 'a'}
+SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound2', 'piano-'+n+'.wav')
+NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
 
 R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
@@ -26,7 +25,7 @@ TSHLD = 15 # walabot SetThreshold value
 X_MAX = R_MAX * sin(radians(abs(THETA_MIN)))
 Y_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * sin(radians(PHI_MAX))
 Z_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * cos(radians(PHI_MAX))
-VELOCITY_THRESHOLD = 0.6 # captured vel bigger than than counts as key-press
+VELOCITY_THRESHOLD = 0.7 # captured vel bigger than than counts as key-press
 
 def getMedian(nums):
     """ Calculate median of a given set of values.
@@ -80,9 +79,9 @@ class MainGUI(tk.Label):
         self.pygame.init()
         self.playedLastTime = False
         self.lastKeyPressed = 0
-        self.keyHiglghtImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1))
+        self.highlightImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1))
             for k in range(7)]
-        self.keyPressedImages = [tk.PhotoImage(file=PRESSED_PATH(k+1))
+        self.pressedImages = [tk.PhotoImage(file=PRESSED_PATH(k+1))
             for k in range(7)]
         self.lastTargets = deque([None] * 5)
 
@@ -112,12 +111,13 @@ class MainGUI(tk.Label):
             return
         median = getMedian(t.yPosCm for t in self.lastTargets if t is not None)
         vel = getVelocity(t.xPosCm for t in self.lastTargets if t is not None)
+        print(vel)
         key = getKeyNum(median)
-        if target.zPosCm < R_MAX and key == self.lastKeyPressed:
-            if vel > VELOCITY_THRESHOLD: # 'press' area
+        if target.zPosCm < R_MAX:
+            if vel > VELOCITY_THRESHOLD and target.xPosCm >= 0: # 'press' area
                 self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
-                self.configure(image=self.keyHiglghtImages[key-1])
+                self.configure(image=self.highlightImages[key-1])
                 self.playedLastTime = False
         else: # hand is too far from the Walabot
             self.configure(image=self.img)
@@ -129,7 +129,7 @@ class MainGUI(tk.Label):
             is pressed. Play a piano sound corresponding to the key if in the
             last iteration no sound was played.
         """
-        self.configure(image=self.keyPressedImages[key-1])
+        self.configure(image=self.pressedImages[key-1])
         if not self.playedLastTime:
             self.pygame.mixer.music.load(SOUND_PATH(NOTES[key]))
             self.pygame.mixer.music.play()
