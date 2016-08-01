@@ -71,16 +71,18 @@ class MainGUI(tk.Label):
     def __init__(self, master):
         self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
         tk.Label.__init__(self, master, image=self.img)
+        self.highlightImages, self.pressedImages = self.initImages()
         self.wlbt = Walabot(self) # init the Walabot SDK
-        self.after(750, self.startWlbt) # necessary delay to open the window
         self.pygame = pygame # used to play piano sound
         self.pygame.init()
         self.playedLastTime = False
-        self.highlightImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1))
-            for k in range(7)]
-        self.pressedImages = [tk.PhotoImage(file=PRESSED_PATH(k+1))
-            for k in range(7)]
         self.lastTargets = deque([None] * 5)
+        self.after(750, self.startWlbt) # necessary delay to open the window
+
+    def initImages(self):
+        hImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1)) for k in range(7)]
+        pImages = [tk.PhotoImage(file=PRESSED_PATH(k+1)) for k in range(7)]
+        return hImages, pImages
 
     def startWlbt(self):
         if self.alertIfWalabotIsNotConnected():
