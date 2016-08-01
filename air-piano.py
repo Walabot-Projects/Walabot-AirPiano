@@ -9,13 +9,6 @@ try: import Tkinter as tk
 except ImportError: import tkinter as tk
 
 IMG_PATH = join(dirname(argv[0]), 'img')
-ICON_PATH = join(IMG_PATH, 'icon.gif')
-BLANK_KEYS_PATH = join(IMG_PATH, 'keys-blank.gif')
-CONNECT_WALABOT_PATH = join(IMG_PATH, 'connect-device.gif')
-HIGLGHT_PATH = lambda n: join(IMG_PATH, 'highlight-'+str(n)+'.gif')
-PRESSED_PATH = lambda n: join(IMG_PATH, 'pressed-'+str(n)+'.gif')
-SOUND_PATH = lambda n : join(dirname(argv[0]), 'sound2', 'piano-'+n+'.wav')
-NOTES = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
 
 R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
@@ -69,20 +62,21 @@ def getKeyNum(y):
 class MainGUI(tk.Label):
 
     def __init__(self, master):
-        self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
+        self.img = tk.PhotoImage(file=join(IMG_PATH, 'keys-blank.gif'))
         tk.Label.__init__(self, master, image=self.img)
         self.highlightImages, self.pressedImages = self.initImages()
-        self.wlbt = Walabot(self) # init the Walabot SDK
-        self.pygame = pygame # used to play piano sound
-        self.pygame.init()
+        self.wlbt = Walabot() # init the Walabot SDK
+        self.pianoSounds = PianoSounds() # used to play piano sound
         self.playedLastTime = False
         self.lastTargets = deque([None] * 5)
         self.after(750, self.startWlbt) # necessary delay to open the window
 
     def initImages(self):
-        hImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1)) for k in range(7)]
-        pImages = [tk.PhotoImage(file=PRESSED_PATH(k+1)) for k in range(7)]
-        return hImages, pImages
+        highlightImages = [tk.PhotoImage(file=join(IMG_PATH,
+            'highlight-'+str(k+1)+'.gif')) for k in range(7)]
+        pressedImages = [tk.PhotoImage(file=join(IMG_PATH,
+            'pressed-'+str(k+1)+'.gif')) for k in range(7)]
+        return highlightImages, pressedImages
 
     def startWlbt(self):
         if self.alertIfWalabotIsNotConnected():
@@ -91,11 +85,11 @@ class MainGUI(tk.Label):
 
     def alertIfWalabotIsNotConnected(self):
         if not self.wlbt.isConnected():
-            self.img = tk.PhotoImage(file=CONNECT_WALABOT_PATH)
+            self.img = tk.PhotoImage(file=join(IMG_PATH, 'connect-device.gif'))
             self.configure(image=self.img)
             self.after_idle(self.startWlbt)
             return False
-        self.img = tk.PhotoImage(file=BLANK_KEYS_PATH)
+        self.img = tk.PhotoImage(file=join(IMG_PATH, 'keys-blank.gif'))
         self.configure(image=self.img)
         return True
 
@@ -113,7 +107,10 @@ class MainGUI(tk.Label):
         key = getKeyNum(median)
         if target.zPosCm < R_MAX:
             if target.xPosCm >= 0 and vel > VELOCITY_THRESHOLD: # 'press' area
-                self.pressAndPlayKey(key)
+                self.configure(image=self.pressedImages[key-1])
+                if not self.playedLastTime: # plays only if in the last
+                    self.pianoSounds.play(key) # iteration no sound was played
+                    self.playedLastTime = True
             else: # hand is at 'highlight' area
                 self.configure(image=self.highlightImages[key-1])
                 self.playedLastTime = False
@@ -121,28 +118,35 @@ class MainGUI(tk.Label):
             self.configure(image=self.img)
             self.playedLastTime = False
 
-    def pressAndPlayKey(self, key):
-        """ Given a key, change the piano image to one where the certain key
-            is pressed. Play a piano sound corresponding to the key if in the
-            last iteration no sound was played.
+class PianoSounds:
+    """ This class is designed to play sound files of piano keys.
+    """
+
+    def __init__(self):
+        """ Initialize the PyGame module and loads the sound files according
+            to the order of notes.
         """
-        self.configure(image=self.pressedImages[key-1])
-        if not self.playedLastTime:
-            self.pygame.mixer.music.load(SOUND_PATH(NOTES[key]))
-            self.pygame.mixer.music.play()
-            self.playedLastTime = True
+        self.pygame = pygame
+        self.pygame.init()
+        self.notes = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
+        self.sounds = [self.pygame.mixer.Sound(join(dirname(argv[0]), 'sound2',
+            'piano-'+self.notes[key+1]+'.wav')) for key in range(7)]
+
+    def play(self, key):
+        """ Plays a sound of a given key (between 1 and 7).
+        """
+        self.sounds[key-1].play()
 
 class Walabot:
     """ This class is designed to control Walabot device using the Walabot SDK.
     """
 
-    def __init__(self, master):
+    def __init__(self):
         """ Initialize the Walabot SDK, importing the Walabot module,
             set the settings folder path and declare the 'distance' lambda
             function which calculates the distance of a 3D point from the
             origin of axes.
         """
-        self.master = master
         if platform == 'win32': # for windows
             path = join('C:/', 'Program Files', 'Walabot', 'WalabotSDK',
                 'python')
@@ -196,7 +200,8 @@ def configureWindow(root):
     """ Set configurations for the GUI window, such as icon, title, etc.
     """
     root.title('Walabot - Piano Gestures')
-    root.tk.call('wm', 'iconphoto', root._w, tk.PhotoImage(file=ICON_PATH))
+    iconPath = join(IMG_PATH, 'icon.gif')
+    root.tk.call('wm', 'iconphoto', root._w, tk.PhotoImage(file=iconPath))
     root.geometry('+{}+{}'.format(APP_X, APP_Y))
     root.resizable(width=False, height=False)
 
