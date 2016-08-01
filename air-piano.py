@@ -9,6 +9,7 @@ try: import Tkinter as tk
 except ImportError: import tkinter as tk
 
 IMG_PATH = join(dirname(argv[0]), 'img')
+SOUND_PATH = join(dirname(argv[0]), 'sound2')
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
 
 R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
@@ -62,6 +63,9 @@ def getKeyNum(y):
 class MainGUI(tk.Label):
 
     def __init__(self, master):
+        """ Loads the app assets (images, sound files), init the Walabot,
+            sets variables and start the main loop.
+        """
         self.img = tk.PhotoImage(file=join(IMG_PATH, 'keys-blank.gif'))
         tk.Label.__init__(self, master, image=self.img)
         self.highlightImages, self.pressedImages = self.initImages()
@@ -72,6 +76,11 @@ class MainGUI(tk.Label):
         self.after(750, self.startWlbt) # necessary delay to open the window
 
     def initImages(self):
+        """ Loads the piano images from IMG_PATH and returns them.
+            Returns:
+                highlightImages     A list of images of highlight keys.
+                pressedImages       A list of images of pressed keys.
+        """
         highlightImages = [tk.PhotoImage(file=join(IMG_PATH,
             'highlight-'+str(k+1)+'.gif')) for k in range(7)]
         pressedImages = [tk.PhotoImage(file=join(IMG_PATH,
@@ -79,11 +88,16 @@ class MainGUI(tk.Label):
         return highlightImages, pressedImages
 
     def startWlbt(self):
+        """ Makes sure a Walabot is connected, sets it's parameters and start
+            detecting targets and play sounds.
+        """
         if self.alertIfWalabotIsNotConnected():
             self.wlbt.setParametersAndStart()
             self.detectTargetAndReply()
 
     def alertIfWalabotIsNotConnected(self):
+        """ Alerts the user to connect a Walabot as long device is not found.
+        """
         if not self.wlbt.isConnected():
             self.img = tk.PhotoImage(file=join(IMG_PATH, 'connect-device.gif'))
             self.configure(image=self.img)
@@ -94,6 +108,10 @@ class MainGUI(tk.Label):
         return True
 
     def detectTargetAndReply(self):
+        """ Trigger the Walabot and update lastTargets. Then finds a key area
+            (using the median of lastTargets), and velocity. Then decides if
+            to play a key sound, highlight a key, or do nothing.
+        """
         self.after_idle(self.detectTargetAndReply)
         target = self.wlbt.getClosestTarget()
         self.lastTargets.popleft()
@@ -129,7 +147,7 @@ class PianoSounds:
         self.pygame = pygame
         self.pygame.init()
         self.notes = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
-        self.sounds = [self.pygame.mixer.Sound(join(dirname(argv[0]), 'sound2',
+        self.sounds = [self.pygame.mixer.Sound(join(SOUND_PATH,
             'piano-'+self.notes[key+1]+'.wav')) for key in range(7)]
 
     def play(self, key):
