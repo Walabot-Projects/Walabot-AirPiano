@@ -8,8 +8,8 @@ import pygame
 try: import Tkinter as tk
 except ImportError: import tkinter as tk
 
-IMG_PATH = join(dirname(argv[0]), 'img')
-SOUND_PATH = join(dirname(argv[0]), 'sound2')
+IMG_PATH = join(dirname(argv[0]), 'img') # path to images
+SOUND_PATH = join(dirname(argv[0]), 'sound2') # path to sound files
 APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
 
 R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
@@ -18,6 +18,7 @@ PHI_MIN, PHI_MAX, PHI_RES = -75, 75, 2 # walabot SetArenaPhi values
 TSHLD = 15 # walabot SetThreshold value
 VELOCITY_THRESHOLD = 0.7 # captured vel bigger than that counts as key-press
 Y_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * sin(radians(PHI_MAX))
+Y_SCALE = 0.8 # determines the ratio of Y axis that counts as keys range
 
 def getMedian(nums):
     """ Calculate median of a given set of values.
@@ -57,7 +58,7 @@ def getKeyNum(y):
         Returns:
             key             The key number (between 1 and 7).
     """
-    key = int(7 * (y + Y_MAX) / (2 * Y_MAX)) + 1
+    key = int(7 * (y + Y_MAX * Y_SCALE) / (2 * Y_MAX * Y_SCALE)) + 1
     return 7 if key == 8 else key # due to arena inconsistencies
 
 class MainGUI(tk.Label):
