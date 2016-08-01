@@ -20,12 +20,10 @@ APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
 
 R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
 THETA_MIN, THETA_MAX, THETA_RES = -25, 5, 2 # walabot SetArenaTheta values
-PHI_MIN, PHI_MAX, PHI_RES = -60, 60, 2 # walabot SetArenaPhi values
+PHI_MIN, PHI_MAX, PHI_RES = -75, 75, 2 # walabot SetArenaPhi values
 TSHLD = 15 # walabot SetThreshold value
-X_MAX = R_MAX * sin(radians(abs(THETA_MIN)))
+VELOCITY_THRESHOLD = 0.7 # captured vel bigger than that counts as key-press
 Y_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * sin(radians(PHI_MAX))
-Z_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * cos(radians(PHI_MAX))
-VELOCITY_THRESHOLD = 0.7 # captured vel bigger than than counts as key-press
 
 def getMedian(nums):
     """ Calculate median of a given set of values.
@@ -78,7 +76,6 @@ class MainGUI(tk.Label):
         self.pygame = pygame # used to play piano sound
         self.pygame.init()
         self.playedLastTime = False
-        self.lastKeyPressed = 0
         self.highlightImages = [tk.PhotoImage(file=HIGLGHT_PATH(k+1))
             for k in range(7)]
         self.pressedImages = [tk.PhotoImage(file=PRESSED_PATH(k+1))
@@ -111,10 +108,9 @@ class MainGUI(tk.Label):
             return
         median = getMedian(t.yPosCm for t in self.lastTargets if t is not None)
         vel = getVelocity(t.xPosCm for t in self.lastTargets if t is not None)
-        print(vel)
         key = getKeyNum(median)
         if target.zPosCm < R_MAX:
-            if vel > VELOCITY_THRESHOLD and target.xPosCm >= 0: # 'press' area
+            if target.xPosCm >= 0 and vel > VELOCITY_THRESHOLD: # 'press' area
                 self.pressAndPlayKey(key)
             else: # hand is at 'highlight' area
                 self.configure(image=self.highlightImages[key-1])
@@ -122,7 +118,6 @@ class MainGUI(tk.Label):
         else: # hand is too far from the Walabot
             self.configure(image=self.img)
             self.playedLastTime = False
-        self.lastKeyPressed = key
 
     def pressAndPlayKey(self, key):
         """ Given a key, change the piano image to one where the certain key
