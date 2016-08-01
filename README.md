@@ -24,7 +24,7 @@ The Y axis is used to determine the exact key which will be pressed.
 
 ##### Positioning the Walabot
 
-![Positioning the Walabot](https://raw.githubusercontent.com/Walabot-Projects/Walabot-PeopleCounter/blob/master/example.png)
+![Positioning the Walabot](https://raw.githubusercontent.com/Walabot-Projects/Walabot-AirPiano/master/example.png)
 
 ### Editing the code
 
