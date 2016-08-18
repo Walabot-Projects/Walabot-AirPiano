@@ -1,4 +1,4 @@
-from __future__ import print_function # python2-python3 compatibility
+from __future__ import print_function, division # python2-python3 compatibility
 from os.path import join, dirname
 from sys import argv
 from math import sqrt, sin, cos, radians
@@ -7,6 +7,8 @@ import pygame
 import WalabotAPI
 try: import Tkinter as tk
 except ImportError: import tkinter as tk
+try: range = xrange # python2-python3 compatibility
+except NameError: pass
 
 R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
 THETA_MIN, THETA_MAX, THETA_RES = -25, 5, 2 # walabot SetArenaTheta values
