@@ -15,10 +15,11 @@ The Y axis is used to determine the exact key which will be pressed.
 
 ### How to use
 
-1. [Install the Walabot SDK.](http://api.walabot.com/_install.html)
-2. Download and install [PyGame](http://www.pygame.org/download.shtml).
-3. Position the Walabot as the image below.
-4. Run `air-piano.py` and start playing! :musical_keyboard:
+1. [Install the Walabot SDK.](http://walabot.com/getting-started)
+2. [Install the WalabotAPI Python library using pip.](http://api.walabot.com/_pythonapi.html)
+3. Download and install [PyGame](http://www.pygame.org/download.shtml).
+4. Position the Walabot as the image below.
+5. Run `air-piano.py` and start playing! :musical_keyboard:
 
 **IMPORTANT NOTE:** Current Walabot settings are for vMaker18.
 

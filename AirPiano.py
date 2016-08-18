@@ -1,10 +1,10 @@
 from __future__ import print_function # python2-python3 compatibility
-from imp import load_source
 from os.path import join, dirname
-from sys import platform, argv
+from sys import argv
 from math import sqrt, sin, cos, radians
 from collections import deque
 import pygame
+import WalabotAPI
 try: import Tkinter as tk
 except ImportError: import tkinter as tk
 
@@ -166,12 +166,7 @@ class Walabot:
             function which calculates the distance of a 3D point from the
             origin of axes.
         """
-        if platform == 'win32': # for windows
-            path = join('C:/', 'Program Files', 'Walabot', 'WalabotSDK',
-                'python')
-        else: # for linux, raspberry pi, etc.
-            path = join('/usr', 'share', 'walabot', 'python')
-        self.wlbt = load_source('WalabotAPI', join(path, 'WalabotAPI.py'))
+        self.wlbt = WalabotAPI
         self.wlbt.Init()
         self.wlbt.SetSettingsFolder()
         self.distance = lambda t: sqrt(t.xPosCm**2 + t.yPosCm**2 + t.zPosCm**2)
