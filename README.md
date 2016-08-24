@@ -4,6 +4,7 @@ This is a simple Walabot game application that acts as an air piano.
 
 * The code is written in Python and works on both Python 2 and Python 3.  
 * The app was tested on Windows 10 and Ubuntu 16.04.  
+* GUI is done with the [tkinter](https://docs.python.org/3.5/library/tkinter.html) library.
 * The app's using [PyGame](http://www.pygame.org) to play the sound files.
 * Piano sound files are from [wav-piano-sound](https://github.com/pffy/wav-piano-sound).
 
