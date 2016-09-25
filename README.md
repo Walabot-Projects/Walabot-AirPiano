@@ -1,5 +1,7 @@
 # AirPiano - A Walabot Application
 
+[![Piano Man - Walabot Wednesday](http://img.youtube.com/vi/3NyIKG8gZqU/0.jpg)](http://www.youtube.com/watch?v=3NyIKG8gZqU)
+
 This is a simple Walabot game application that acts as an air piano.
 
 * The code is written in Python and works on both Python 2 and Python 3.  
