@@ -1,26 +1,31 @@
-from __future__ import print_function, division # python2-python3 compatibility
+from __future__ import print_function, division
 from os.path import join, dirname
 from sys import argv
 from math import sqrt, sin, cos, radians
 from collections import deque
 import pygame
 import WalabotAPI
-try: import Tkinter as tk
-except ImportError: import tkinter as tk
-try: range = xrange # python2-python3 compatibility
-except NameError: pass
+try:
+    import Tkinter as tk
+except ImportError:
+    import tkinter as tk
+try:
+    range = xrange
+except NameError:
+    pass
 
-R_MIN, R_MAX, R_RES = 2, 20, 5 # walabot SetArenaR values
-THETA_MIN, THETA_MAX, THETA_RES = -25, 5, 2 # walabot SetArenaTheta values
-PHI_MIN, PHI_MAX, PHI_RES = -75, 75, 2 # walabot SetArenaPhi values
-TSHLD = 15 # walabot SetThreshold value
-VELOCITY_THRESHOLD = 0.7 # captured vel bigger than that counts as key-press
+R_MIN, R_MAX, R_RES = 2, 20, 5  # SetArenaR values
+THETA_MIN, THETA_MAX, THETA_RES = -25, 5, 2  # SetArenaTheta values
+PHI_MIN, PHI_MAX, PHI_RES = -75, 75, 2  # SetArenaPhi values
+TSHLD = 15  # SetThreshold value
+VELOCITY_THRESHOLD = 0.7  # captured vel bigger than that counts as key-press
 Y_MAX = R_MAX * cos(radians(abs(THETA_MIN))) * sin(radians(PHI_MAX))
 
-IMG_PATH = join(dirname(argv[0]), 'img') # path to images
-SOUND_PATH = join(dirname(argv[0]), 'sound') # path to sound files
-APP_X, APP_Y = 150, 50 # (x, y) of left corner of the window (in pixels)
-Y_SCALE = 0.8 # determines the ratio of Y axis that counts as keys range
+IMG_PATH = join(dirname(argv[0]), 'img')  # path to images
+SOUND_PATH = join(dirname(argv[0]), 'sound')  # path to sound files
+APP_X, APP_Y = 150, 50  # (x, y) of left corner of the window (in pixels)
+Y_SCALE = 0.8  # determines the ratio of Y axis that counts as keys range
+
 
 def getMedian(nums):
     """ Calculate median of a given set of values.
@@ -35,6 +40,7 @@ def getMedian(nums):
     else:
         return float(sum(nums[(len(nums)/2)-1:(len(nums)/2)+1])) / 2.0
 
+
 def getVelocity(data):
     """ Calculate velocity of a given set of values using linear regression.
         Arguments:
@@ -45,10 +51,12 @@ def getVelocity(data):
     sumY = sumXY = 0
     for x, y in enumerate(data):
         sumY, sumXY = sumY + y, sumXY + x*y
-    if sumXY == 0: return 0 # no values / one values only / all values are 0
-    sumX = x * (x+1) / 2 # Gauss's formula - sum of first x natural numbers
-    sumXX = x * (x+1) * (2*x+1) / 6 # sum of sequence of squares
+    if sumXY == 0:  # no values / one values only / all values are 0
+        return 0
+    sumX = x * (x+1) / 2  # Gauss's formula - sum of first x natural numbers
+    sumXX = x * (x+1) * (2*x+1) / 6  # sum of sequence of squares
     return (sumXY - sumX*sumY/(x+1)) / (sumXX - sumX**2/(x+1))
+
 
 def getKeyNum(y):
     """ Calculate key number (out of 7) given a y position.
@@ -61,7 +69,8 @@ def getKeyNum(y):
             key             The key number (between 1 and 7).
     """
     key = int(7 * (y + Y_MAX * Y_SCALE) / (2 * Y_MAX * Y_SCALE)) + 1
-    return 7 if key == 8 else key # due to arena inconsistencies
+    return 7 if key == 8 else key  # due to arena inconsistencies
+
 
 class MainGUI(tk.Label):
 
@@ -72,11 +81,11 @@ class MainGUI(tk.Label):
         self.img = tk.PhotoImage(file=join(IMG_PATH, 'keys-blank.gif'))
         tk.Label.__init__(self, master, image=self.img)
         self.highlightImages, self.pressedImages = self.initImages()
-        self.wlbt = Walabot() # init the Walabot SDK
-        self.pianoSounds = PianoSounds() # used to play piano sound
+        self.wlbt = Walabot()  # init the Walabot SDK
+        self.pianoSounds = PianoSounds()  # used to play piano sound
         self.playedLastTime = False
         self.lastTargets = deque([None] * 5)
-        self.after(750, self.startWlbt) # necessary delay to open the window
+        self.after(750, self.startWlbt)  # necessary delay to open the window
 
     def initImages(self):
         """ Loads the piano images from IMG_PATH and returns them.
@@ -84,10 +93,12 @@ class MainGUI(tk.Label):
                 highlightImages     A list of images of highlight keys.
                 pressedImages       A list of images of pressed keys.
         """
-        highlightImages = [tk.PhotoImage(file=join(IMG_PATH,
-            'highlight-'+str(k+1)+'.gif')) for k in range(7)]
-        pressedImages = [tk.PhotoImage(file=join(IMG_PATH,
-            'pressed-'+str(k+1)+'.gif')) for k in range(7)]
+        highlightImages = [
+            tk.PhotoImage(file=join(IMG_PATH, 'highlight-'+str(k+1)+'.gif'))
+            for k in range(7)]
+        pressedImages = [
+            tk.PhotoImage(file=join(IMG_PATH, 'pressed-'+str(k+1)+'.gif'))
+            for k in range(7)]
         return highlightImages, pressedImages
 
     def startWlbt(self):
@@ -127,17 +138,18 @@ class MainGUI(tk.Label):
         vel = getVelocity(t.xPosCm for t in self.lastTargets if t is not None)
         key = getKeyNum(median)
         if target.zPosCm < R_MAX:
-            if target.xPosCm >= 0 and vel > VELOCITY_THRESHOLD: # 'press' area
+            if target.xPosCm >= 0 and vel > VELOCITY_THRESHOLD:  # 'press' area
                 self.configure(image=self.pressedImages[key-1])
-                if not self.playedLastTime: # plays only if in the last
-                    self.pianoSounds.play(key) # iteration no sound was played
+                if not self.playedLastTime:  # plays only if in the last
+                    self.pianoSounds.play(key)  # iteration no sound was played
                     self.playedLastTime = True
-            else: # hand is at 'highlight' area
+            else:  # hand is at 'highlight' area
                 self.configure(image=self.highlightImages[key-1])
                 self.playedLastTime = False
-        else: # hand is too far from the Walabot
+        else:  # hand is too far from the Walabot
             self.configure(image=self.img)
             self.playedLastTime = False
+
 
 class PianoSounds:
     """ This class is designed to play sound files of piano keys.
@@ -150,13 +162,17 @@ class PianoSounds:
         self.pygame = pygame
         self.pygame.init()
         self.notes = {1: 'b', 2: 'a', 3: 'g', 4: 'f', 5: 'e', 6: 'd', 7: 'c'}
-        self.sounds = [self.pygame.mixer.Sound(join(SOUND_PATH,
-            'piano-'+self.notes[key+1]+'.wav')) for key in range(7)]
+        self.sounds = [
+            self.pygame.mixer.Sound(
+                join(SOUND_PATH, 'piano-'+self.notes[key+1]+'.wav')
+            )
+            for key in range(7)]
 
     def play(self, key):
         """ Plays a sound of a given key (between 1 and 7).
         """
         self.sounds[key-1].play()
+
 
 class Walabot:
     """ This class is designed to control Walabot device using the Walabot SDK.
@@ -181,7 +197,7 @@ class Walabot:
         try:
             self.wlbt.ConnectAny()
         except self.wlbt.WalabotError as err:
-            if err.code == 19: # 'WALABOT_INSTRUMENT_NOT_FOUND'
+            if err.code == 19:  # 'WALABOT_INSTRUMENT_NOT_FOUND'
                 return False
         return True
 
@@ -209,8 +225,9 @@ class Walabot:
         targets = self.wlbt.GetSensorTargets()
         try:
             return max(targets, key=self.distance)
-        except ValueError: # 'targets' is empty; no targets were found
+        except ValueError:  # 'targets' is empty; no targets were found
             return None
+
 
 def configureWindow(root):
     """ Set configurations for the GUI window, such as icon, title, etc.
@@ -220,6 +237,7 @@ def configureWindow(root):
     root.tk.call('wm', 'iconphoto', root._w, tk.PhotoImage(file=iconPath))
     root.geometry('+{}+{}'.format(APP_X, APP_Y))
     root.resizable(width=False, height=False)
+
 
 def startApp():
     """ Main function. Create and init the MainGUI class, which runs the app.
