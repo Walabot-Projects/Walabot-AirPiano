@@ -36,9 +36,9 @@ def getMedian(nums):
     """
     nums = sorted(nums)
     if len(nums) % 2 == 1:
-        return nums[((len(nums)+1) / 2) - 1]
+        return nums[((len(nums)+1) // 2) - 1]
     else:
-        return float(sum(nums[(len(nums)/2)-1:(len(nums)/2)+1])) / 2.0
+        return float(sum(nums[(len(nums)//2)-1:(len(nums)//2)+1])) / 2.0
 
 
 def getVelocity(data):
