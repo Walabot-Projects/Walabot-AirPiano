@@ -23,7 +23,7 @@ The Y axis is used to determine the exact key which will be pressed.
 3. Position the Walabot as the image below.
 4. Run `AirPiano.py` and start playing! :musical_keyboard:
 
-**IMPORTANT NOTE:** Current Walabot settings are for Walabot Pro.
+**IMPORTANT NOTE:** Current Walabot settings are for Walabot Developer (formerly Walabot Pro).
 
 #### Positioning the Walabot
 
