@@ -21,7 +21,7 @@ The Y axis is used to determine the exact key which will be pressed.
 1. Install the [Walabot SDK](http://walabot.com/getting-started) and the [WalabotAPI Python library](https://github.com/Walabot-Projects/Walabot-HelloWalabot#how-to-use) using pip.
 2. Download and install [PyGame](http://www.pygame.org/download.shtml).
 3. Position the Walabot as the image below.
-4. Run `AirPiano.py` and start playing! :musical_keyboard:
+4. Run `AirPiano.py` and start playing!
 
 **IMPORTANT NOTE:** Current Walabot settings are for Walabot Developer (formerly Walabot Pro).
 
